@@ -1,0 +1,6 @@
+{
+  "name": "AI Strategic Intelligence Vault",
+  "description": "An interactive strategic intelligence workspace and pattern mapping index powered by Gemini, synthesizing signals, patterns, active projects, and Obsidian-style database folders.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
