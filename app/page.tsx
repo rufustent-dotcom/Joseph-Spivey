@@ -65,6 +65,7 @@ interface Connection {
   patternId: string;
   signalId: string;
   strength: "Strong" | "Emerging" | "Weak";
+  notes?: string;
 }
 
 // Fixed-relative SVG mapping coordinate helpers
@@ -851,11 +852,15 @@ export default function AIStrategicIntelligenceVault() {
       let newConnections = [...connections];
       if (existingConnIdx > -1) {
         newConnections[existingConnIdx].strength = connectionStrength as any;
+        if (!newConnections[existingConnIdx].notes) {
+          newConnections[existingConnIdx].notes = `Linked via Strategic Synthesis payload: /${targetPath}`;
+        }
       } else {
         newConnections.push({
           patternId: patternObj.id,
           signalId: signalObj.id,
-          strength: connectionStrength as any || "Emerging"
+          strength: connectionStrength as any || "Emerging",
+          notes: `Established automatically from Synthesis payload: /${targetPath}`
         });
       }
       setConnections(newConnections);
@@ -1806,6 +1811,153 @@ export default function AIStrategicIntelligenceVault() {
                             <span className="text-violet-400 font-semibold">{pat.strength} Connections</span>
                           </div>
                         </div>
+
+                        {/* Connection Annotations and Notes */}
+                        <div className="space-y-3 pt-3 border-t border-zinc-900">
+                          <div className="text-[10px] uppercase font-mono text-zinc-400 font-semibold tracking-wider flex items-center gap-1.5">
+                            <Network className="h-3.5 w-3.5 text-violet-400" />
+                            <span>Connection Annotations</span>
+                          </div>
+
+                          {(() => {
+                            const activeConns = connections.filter(c => c.patternId === pat.id);
+                            if (activeConns.length === 0) {
+                              return (
+                                <p className="text-[10px] text-zinc-650 font-mono leading-normal italic bg-zinc-900/40 p-2.5 rounded border border-zinc-900">
+                                  No active signal connections. Establish a path below.
+                                </p>
+                              );
+                            }
+
+                            return (
+                              <div className="space-y-3 max-h-[240px] overflow-y-auto pr-1">
+                                {activeConns.map((c) => {
+                                  const sig = signals.find(s => s.id === c.signalId);
+                                  if (!sig) return null;
+                                  return (
+                                    <div key={c.signalId} className="bg-zinc-900/60 p-2.5 rounded border border-zinc-800/80 space-y-2">
+                                      <div className="flex items-start justify-between gap-1">
+                                        <div className="truncate">
+                                          <span className="text-[9px] font-mono text-cyan-400 bg-cyan-950 border border-cyan-900 px-1 py-0.2 rounded mr-1">
+                                            S{sig.number}
+                                          </span>
+                                          <span className="text-[10px] font-medium text-zinc-200 font-sans">{sig.title}</span>
+                                        </div>
+
+                                        <button
+                                          id={`btn-remove-conn-${pat.id}-${sig.id}`}
+                                          onClick={() => {
+                                            const newConns = connections.filter(conn => !(conn.patternId === pat.id && conn.signalId === sig.id));
+                                            setConnections(newConns);
+                                            localStorage.setItem("strategic_vault_connections", JSON.stringify(newConns));
+                                            addTerminalLog(`Removed connection: Pattern ${pat.number} <-> Signal ${sig.number}`);
+                                          }}
+                                          className="text-[10px] font-mono text-red-400 hover:text-red-300 select-none cursor-pointer"
+                                          title="Remove this connection"
+                                        >
+                                          ×
+                                        </button>
+                                      </div>
+
+                                      <div className="flex items-center justify-between text-[9px] font-mono">
+                                        <span className="text-zinc-500">Strength:</span>
+                                        <div className="flex gap-1.5 animate-normal">
+                                          {(["Strong", "Emerging", "Weak"] as const).map((str) => (
+                                            <button
+                                              key={str}
+                                              id={`btn-str-${pat.id}-${sig.id}-${str}`}
+                                              onClick={() => {
+                                                const newConns = connections.map(conn => 
+                                                  (conn.patternId === pat.id && conn.signalId === sig.id)
+                                                    ? { ...conn, strength: str }
+                                                    : conn
+                                                );
+                                                setConnections(newConns);
+                                                localStorage.setItem("strategic_vault_connections", JSON.stringify(newConns));
+                                              }}
+                                              className={cn(
+                                                "px-1 rounded text-[8px] font-bold select-none cursor-pointer",
+                                                c.strength === str
+                                                  ? "bg-violet-900 text-violet-105 font-extrabold"
+                                                  : "bg-zinc-950 text-zinc-550 hover:text-zinc-300"
+                                              )}
+                                            >
+                                              {str}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      </div>
+
+                                      <div className="space-y-0.5">
+                                        <div className="flex justify-between items-center text-[9px] font-mono text-zinc-500">
+                                          <span className="uppercase">Connection Annotation Note</span>
+                                          <span className={cn(
+                                            "font-semibold",
+                                            (c.notes || "").length > 280 ? "text-red-400" : "text-zinc-500"
+                                          )}>{(c.notes || "").length}/280</span>
+                                        </div>
+                                        <textarea
+                                          id={`textarea-notes-${pat.id}-${sig.id}`}
+                                          value={c.notes || ""}
+                                          onChange={(e) => {
+                                            const val = e.target.value;
+                                            const newConns = connections.map(conn => 
+                                              (conn.patternId === pat.id && conn.signalId === sig.id)
+                                                ? { ...conn, notes: val }
+                                                : conn
+                                            );
+                                            setConnections(newConns);
+                                            localStorage.setItem("strategic_vault_connections", JSON.stringify(newConns));
+                                          }}
+                                          placeholder="Why are they connected? Write strategic notes..."
+                                          className="w-full text-[10px] font-sans p-1.5 bg-zinc-950 border border-zinc-800 rounded text-zinc-300 focus:outline-none focus:border-violet-500 placeholder-zinc-700 resize-none leading-relaxed"
+                                          rows={2}
+                                        />
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            );
+                          })()}
+
+                          {/* Quick add connection builder */}
+                          {(() => {
+                            const unconnected = signals.filter(s => !connections.some(c => c.patternId === pat.id && c.signalId === s.id));
+                            if (unconnected.length === 0) return null;
+                            return (
+                              <div className="pt-1.5 space-y-1.5">
+                                <span className="text-[9px] uppercase font-mono text-zinc-500 block">Establish New Signal Link</span>
+                                <select
+                                  id={`select-add-sig-${pat.id}`}
+                                  value=""
+                                  onChange={(e) => {
+                                    const sigId = e.target.value;
+                                    if (!sigId) return;
+                                    const newConns = [...connections, {
+                                      patternId: pat.id,
+                                      signalId: sigId,
+                                      strength: "Emerging" as const,
+                                      notes: ""
+                                    }];
+                                    setConnections(newConns);
+                                    localStorage.setItem("strategic_vault_connections", JSON.stringify(newConns));
+                                    const addedSig = signals.find(s => s.id === sigId);
+                                    addTerminalLog(`Linked Pattern ${pat.number} <-> Signal ${addedSig?.number || sigId} (Emerging)`);
+                                  }}
+                                  className="w-full text-[10px] font-mono bg-zinc-950 border border-zinc-900 rounded px-2 py-1.5 text-zinc-300 focus:outline-none focus:border-violet-500 cursor-pointer"
+                                >
+                                  <option value="">+ Connect map node...</option>
+                                  {unconnected.map(s => (
+                                    <option key={s.id} value={s.id}>
+                                      Signal {s.number}: {s.title}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                            );
+                          })()}
+                        </div>
                       </div>
                     );
                   })()
@@ -1836,6 +1988,153 @@ export default function AIStrategicIntelligenceVault() {
                               sig.impact === "High" ? "text-emerald-400" : "text-amber-400"
                             )}>{sig.impact} Strategic Impact Point</p>
                           </div>
+                        </div>
+
+                        {/* Connection Annotations and Notes */}
+                        <div className="space-y-3 pt-3 border-t border-zinc-900">
+                          <div className="text-[10px] uppercase font-mono text-zinc-400 font-semibold tracking-wider flex items-center gap-1.5">
+                            <Network className="h-3.5 w-3.5 text-cyan-400" />
+                            <span>Connection Annotations</span>
+                          </div>
+
+                          {(() => {
+                            const activeConns = connections.filter(c => c.signalId === sig.id);
+                            if (activeConns.length === 0) {
+                              return (
+                                <p className="text-[10px] text-zinc-650 font-mono leading-normal italic bg-zinc-900/40 p-2.5 rounded border border-zinc-900">
+                                  No active pattern connections. Establish a path below.
+                                </p>
+                              );
+                            }
+
+                            return (
+                              <div className="space-y-3 max-h-[240px] overflow-y-auto pr-1">
+                                {activeConns.map((c) => {
+                                  const pat = patterns.find(p => p.id === c.patternId);
+                                  if (!pat) return null;
+                                  return (
+                                    <div key={c.patternId} className="bg-zinc-900/60 p-2.5 rounded border border-zinc-800/80 space-y-2">
+                                      <div className="flex items-start justify-between gap-1">
+                                        <div className="truncate">
+                                          <span className="text-[9px] font-mono text-violet-400 bg-violet-950 border border-violet-900 px-1 py-0.2 rounded mr-1">
+                                            P{pat.number}
+                                          </span>
+                                          <span className="text-[10px] font-medium text-zinc-200 font-sans">{pat.title}</span>
+                                        </div>
+
+                                        <button
+                                          id={`btn-remove-conn-sig-${sig.id}-${pat.id}`}
+                                          onClick={() => {
+                                            const newConns = connections.filter(conn => !(conn.signalId === sig.id && conn.patternId === pat.id));
+                                            setConnections(newConns);
+                                            localStorage.setItem("strategic_vault_connections", JSON.stringify(newConns));
+                                            addTerminalLog(`Removed connection: Pattern ${pat.number} <-> Signal ${sig.number}`);
+                                          }}
+                                          className="text-[10px] font-mono text-red-400 hover:text-red-300 select-none cursor-pointer"
+                                          title="Remove this connection"
+                                        >
+                                          ×
+                                        </button>
+                                      </div>
+
+                                      <div className="flex items-center justify-between text-[9px] font-mono">
+                                        <span className="text-zinc-500">Strength:</span>
+                                        <div className="flex gap-1.5 animate-normal">
+                                          {(["Strong", "Emerging", "Weak"] as const).map((str) => (
+                                            <button
+                                              key={str}
+                                              id={`btn-str-sig-${sig.id}-${pat.id}-${str}`}
+                                              onClick={() => {
+                                                const newConns = connections.map(conn => 
+                                                  (conn.signalId === sig.id && conn.patternId === pat.id)
+                                                    ? { ...conn, strength: str }
+                                                    : conn
+                                                );
+                                                setConnections(newConns);
+                                                localStorage.setItem("strategic_vault_connections", JSON.stringify(newConns));
+                                              }}
+                                              className={cn(
+                                                "px-1 rounded text-[8px] font-bold select-none cursor-pointer",
+                                                c.strength === str
+                                                  ? "bg-cyan-900 text-cyan-105 font-extrabold"
+                                                  : "bg-zinc-950 text-zinc-550 hover:text-cyan-300"
+                                              )}
+                                            >
+                                              {str}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      </div>
+
+                                      <div className="space-y-0.5">
+                                        <div className="flex justify-between items-center text-[9px] font-mono text-zinc-500">
+                                          <span className="uppercase">Connection Annotation Note</span>
+                                          <span className={cn(
+                                            "font-semibold",
+                                            (c.notes || "").length > 280 ? "text-red-400" : "text-zinc-500"
+                                          )}>{(c.notes || "").length}/280</span>
+                                        </div>
+                                        <textarea
+                                          id={`textarea-notes-sig-${sig.id}-${pat.id}`}
+                                          value={c.notes || ""}
+                                          onChange={(e) => {
+                                            const val = e.target.value;
+                                            const newConns = connections.map(conn => 
+                                              (conn.signalId === sig.id && conn.patternId === pat.id)
+                                                ? { ...conn, notes: val }
+                                                : conn
+                                            );
+                                            setConnections(newConns);
+                                            localStorage.setItem("strategic_vault_connections", JSON.stringify(newConns));
+                                          }}
+                                          placeholder="Why are they connected? Write strategic notes..."
+                                          className="w-full text-[10px] font-sans p-1.5 bg-zinc-950 border border-zinc-800 rounded text-zinc-300 focus:outline-none focus:border-cyan-500 placeholder-zinc-700 resize-none leading-relaxed"
+                                          rows={2}
+                                        />
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            );
+                          })()}
+
+                          {/* Quick add connection builder */}
+                          {(() => {
+                            const unconnected = patterns.filter(p => !connections.some(c => c.signalId === sig.id && c.patternId === p.id));
+                            if (unconnected.length === 0) return null;
+                            return (
+                              <div className="pt-1.5 space-y-1.5">
+                                <span className="text-[9px] uppercase font-mono text-zinc-500 block">Establish New Pattern Link</span>
+                                <select
+                                  id={`select-add-pat-${sig.id}`}
+                                  value=""
+                                  onChange={(e) => {
+                                    const patId = e.target.value;
+                                    if (!patId) return;
+                                    const newConns = [...connections, {
+                                      patternId: patId,
+                                      signalId: sig.id,
+                                      strength: "Emerging" as const,
+                                      notes: ""
+                                    }];
+                                    setConnections(newConns);
+                                    localStorage.setItem("strategic_vault_connections", JSON.stringify(newConns));
+                                    const addedPat = patterns.find(p => p.id === patId);
+                                    addTerminalLog(`Linked Pattern ${addedPat?.number || patId} <-> Signal ${sig.number} (Emerging)`);
+                                  }}
+                                  className="w-full text-[10px] font-mono bg-zinc-950 border border-zinc-900 rounded px-2 py-1.5 text-zinc-300 focus:outline-none focus:border-cyan-500 cursor-pointer"
+                                >
+                                  <option value="">+ Connect map node...</option>
+                                  {unconnected.map(p => (
+                                    <option key={p.id} value={p.id}>
+                                      Pattern {p.number}: {p.title}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                            );
+                          })()}
                         </div>
                       </div>
                     );
