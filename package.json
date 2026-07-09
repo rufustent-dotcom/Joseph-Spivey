@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
+    "dev": "rm -rf .next && next dev",
+    "build": "NODE_ENV=production next build",
     "start": "next start",
     "lint": "eslint .",
     "clean": "next clean"
@@ -15,6 +15,7 @@
     "autoprefixer": "^10.4.21",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "firebase": "^12.14.0",
     "lucide-react": "^0.553.0",
     "motion": "^12.23.24",
     "next": "15.1.0",

@@ -1,15 +1,26 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { NextRequest, NextResponse } from "next/server";
 
-// Initialize Gemini client with proper User-Agent telemetry
-const ai = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY,
-  httpOptions: {
-    headers: {
-      "User-Agent": "aistudio-build",
-    },
-  },
-});
+// Initialize Gemini client with proper User-Agent telemetry lazy loader
+let aiClient: GoogleGenAI | null = null;
+
+function getAiClient() {
+  if (!aiClient) {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error("GEMINI_API_KEY environment variable is required");
+    }
+    aiClient = new GoogleGenAI({
+      apiKey,
+      httpOptions: {
+        headers: {
+          "User-Agent": "aistudio-build",
+        },
+      },
+    });
+  }
+  return aiClient;
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -56,7 +67,7 @@ And map it to one of the 8 Key Signals:
 
 Provide a proposed filename (lowercase, underscores, with .md extension), a markdown body that matches Obsidian formatting with beautiful headings and bullet points, and connection strength (either "Strong", "Emerging", or "Weak").`;
 
-      const response = await ai.models.generateContent({
+      const response = await getAiClient().models.generateContent({
         model: "gemini-3.5-flash",
         contents: prompt,
         config: {
@@ -120,6 +131,71 @@ Provide a proposed filename (lowercase, underscores, with .md extension), a mark
       return NextResponse.json(JSON.parse(responseText));
     }
 
+    if (action === "generate_future_impact") {
+      const { patternTitle, patternDesc, signalTitle, signalDesc, connectionStrength, noteHistory } = payload;
+
+      const prompt = `You are a Senior Strategic Futurist and Scenario Planner for the Strategic Intelligence Vault.
+Analyze the strategic convergence of the following Node connection:
+
+CORE PATTERN:
+Title: ${patternTitle}
+Details/Implications: ${patternDesc}
+
+KEY SIGNAL:
+Title: ${signalTitle}
+Description: ${signalDesc}
+
+CONNECTION STATUS:
+Strength: ${connectionStrength}
+Analyst's Structural Notes: "${noteHistory || "No notes captured yet."}"
+
+Based on this connection's strength and note history, synthesize a 'Future Impact Scenario' projecting its consequences over a 3-year to 5-year macro horizon.
+
+Requirements:
+- scenarioTitle: Create a highly technical and descriptive strategic title (e.g., "The Decoupling of Local Latency: Autonomous Edge Agent Hegemony").
+- scenarioText: Write a detailed macro scenario in markdown format. Use bullet points and elegant headings. Focus on the compound ripple effects: who wins, who is disrupted, and how this convergence reshapes market landscapes. Ensure it incorporates the analyst's structural note trends. Do not use generic placeholders.
+- strategicTakeaway: Compile a single, highly actionable strategic advice/recommendation.
+- probabilityScore: Estimate a logical probability percentage (e.g., "85%") based on the synergy matching. Stronger connection strength and mature notes should correspond to higher probability scores (e.g., 70-95%), whereas weak connections with obscure notes represent black-swans or wild-cards (e.g., 15-40%).`;
+
+      const response = await getAiClient().models.generateContent({
+        model: "gemini-3.5-flash",
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              scenarioTitle: {
+                type: Type.STRING,
+                description: "Visually striking title of the projected scenario.",
+              },
+              scenarioText: {
+                type: Type.STRING,
+                description: "Detailed, immersive markdown-formatted scenario narrative.",
+              },
+              strategicTakeaway: {
+                type: Type.STRING,
+                description: "Actionable executive guidance point.",
+              },
+              probabilityScore: {
+                type: Type.STRING,
+                description: "Socio-economic probability score, e.g., '75%'",
+              },
+            },
+            required: [
+              "scenarioTitle",
+              "scenarioText",
+              "strategicTakeaway",
+              "probabilityScore",
+            ],
+          },
+        },
+      });
+
+      const responseText = response.text || "{}";
+      return NextResponse.json(JSON.parse(responseText));
+    }
+
     if (action === "chat") {
       const { message, chatHistory, vaultFiles } = payload;
 
@@ -146,7 +222,7 @@ Refer explicitly to existing files and connections where appropriate. Answer the
         { role: "user", parts: [{ text: message }] },
       ];
 
-      const response = await ai.models.generateContent({
+      const response = await getAiClient().models.generateContent({
         model: "gemini-3.5-flash",
         contents: contents,
         config: {

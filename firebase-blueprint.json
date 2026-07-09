@@ -1,0 +1,131 @@
+{
+  "entities": {
+    "userProfile": {
+      "title": "UserProfile",
+      "description": "User account profiles containing usernames, visual avatar assets, stats, and historical telemetry log entries.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Unique user account ID."
+        },
+        "username": {
+          "type": "string",
+          "description": "Custom chosen profile nickname."
+        },
+        "avatarUrl": {
+          "type": "string",
+          "description": "URL or asset reference to user's selected profile photo."
+        },
+        "history": {
+          "type": "array",
+          "description": "Chronological history array of user app actions."
+        },
+        "savedProjectsCount": {
+          "type": "integer",
+          "description": "Total count of active documentation and index mappings."
+        },
+        "followers": {
+          "type": "array",
+          "description": "List of user UIDs who are following this creator."
+        },
+        "following": {
+          "type": "array",
+          "description": "List of user UIDs who this creator is following."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["uid", "username", "avatarUrl"]
+    },
+    "post": {
+      "title": "Post",
+      "description": "A community feed entry with a title, description of creation, generated blueprint image reference, and interaction metrics.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "content": {
+          "type": "string"
+        },
+        "imageUrl": {
+          "type": "string"
+        },
+        "authorId": {
+          "type": "string"
+        },
+        "authorName": {
+          "type": "string"
+        },
+        "authorAvatar": {
+          "type": "string"
+        },
+        "likesCount": {
+          "type": "integer"
+        },
+        "likes": {
+          "type": "array",
+          "description": "Array of user UIDs who have liked this community post."
+        },
+        "commentsCount": {
+          "type": "integer"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["id", "title", "content", "authorId", "authorName", "createdAt"]
+    },
+    "comment": {
+      "title": "Comment",
+      "description": "A single text comment linked to a community post.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "postId": {
+          "type": "string"
+        },
+        "authorId": {
+          "type": "string"
+        },
+        "authorName": {
+          "type": "string"
+        },
+        "authorAvatar": {
+          "type": "string"
+        },
+        "content": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["id", "postId", "authorId", "authorName", "content", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/userProfiles/{userId}": {
+      "schema": "userProfile",
+      "description": "Store individual accounts and social follow graphs."
+    },
+    "/posts/{postId}": {
+      "schema": "post",
+      "description": "Active community feed posts with image attachments."
+    },
+    "/posts/{postId}/comments/{commentId}": {
+      "schema": "comment",
+      "description": "Comments attached directly to corresponding feed items."
+    }
+  }
+}
