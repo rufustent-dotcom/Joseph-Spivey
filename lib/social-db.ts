@@ -15,6 +15,19 @@ import {
 } from "firebase/firestore";
 import { db, auth, isRealFirebase, handleFirestoreError, OperationType } from "./firebase";
 
+// Native has no localStorage; fall back to in-memory storage (not persisted) so calls don't throw.
+const memoryStore = new Map<string, string>();
+const localStorage = {
+  getItem: (key: string): string | null =>
+    typeof globalThis.localStorage !== "undefined"
+      ? globalThis.localStorage.getItem(key)
+      : memoryStore.get(key) ?? null,
+  setItem: (key: string, value: string): void => {
+    if (typeof globalThis.localStorage !== "undefined") globalThis.localStorage.setItem(key, value);
+    else memoryStore.set(key, value);
+  },
+};
+
 export interface UserProfile {
   uid: string;
   username: string;
