@@ -1,4 +1,4 @@
-name: Next.js Build
+name: Expo Build
 
 on:
   push:
@@ -25,4 +25,5 @@ jobs:
     - name: Build
       run: |
         npm ci
+        npm run typecheck
         npm run build

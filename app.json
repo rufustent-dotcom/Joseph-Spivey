@@ -1,0 +1,11 @@
+{
+  "expo": {
+    "name": "ai-studio-applet",
+    "slug": "ai-studio-applet",
+    "version": "0.1.0",
+    "scheme": "aistudioapplet",
+    "orientation": "portrait",
+    "plugins": ["expo-router"],
+    "web": { "bundler": "metro", "output": "static" }
+  }
+}
